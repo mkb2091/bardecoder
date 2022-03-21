@@ -142,14 +142,14 @@ fn determine_perspective(
 
             for x in -i..=i {
                 let alignment = est_alignment + f64::from(x) / 2.0 * dx - f64::from(i) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or_else(||QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
                 let alignment = est_alignment + f64::from(x) / 2.0 * dx + f64::from(i) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or_else(||QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
@@ -158,14 +158,14 @@ fn determine_perspective(
 
             for y in -i + 1..i {
                 let alignment = est_alignment - f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or_else(||QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
                 let alignment = est_alignment + f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or_else(||QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
