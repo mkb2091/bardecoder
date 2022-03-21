@@ -132,7 +132,7 @@ fn determine_perspective(
             let scale = 1.0 + (f64::from(*j) / 10.0);
 
             if i == 0 {
-                if is_alignment(prepared, est_alignment, dx, dy, scale) {
+                if is_alignment(prepared, est_alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
                     found = true;
                     break 'distance;
                 }
@@ -142,14 +142,14 @@ fn determine_perspective(
 
             for x in -i..=i {
                 let alignment = est_alignment + f64::from(x) / 2.0 * dx - f64::from(i) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale) {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
                 let alignment = est_alignment + f64::from(x) / 2.0 * dx + f64::from(i) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale) {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
@@ -158,14 +158,14 @@ fn determine_perspective(
 
             for y in -i + 1..i {
                 let alignment = est_alignment - f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale) {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
                 }
 
                 let alignment = est_alignment + f64::from(i) / 2.0 * dx + f64::from(y) / 2.0 * dy;
-                if is_alignment(prepared, alignment, dx, dy, scale) {
+                if is_alignment(prepared, alignment, dx, dy, scale).ok_or(QRError{msg: "Out of Bounds".to_string()})? {
                     est_alignment = alignment;
                     found = true;
                     break 'distance;
@@ -276,9 +276,9 @@ fn determine_perspective(
     Ok(Perspective::new(dx, delta, dy, Delta { dx: 0.0, dy: 0.0 }))
 }
 
-fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64) -> bool {
+fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64) -> Option<bool> {
     if p.x < 0.0 || p.y < 0.0 {
-        return false;
+        return Some(false);
     }
 
     let dx = scale * dx;
@@ -317,61 +317,61 @@ fn is_alignment(prepared: &GrayImage, p: Point, dx: Delta, dy: Delta, scale: f64
 
     let top_left = p - 2.0 * dx - 2.0 * dy;
     if top_left.x < 0.0 || top_left.y < 0.0 {
-        return false;
+        return Some(false);
     }
 
     let bottom_right = p + 2.0 * dx + 2.0 * dy;
     let dims = prepared.dimensions();
     if bottom_right.x > f64::from(dims.0) || bottom_right.y > f64::from(dims.1) {
-        return false;
+        return Some(false);
     }
 
     for x in -2..2 {
         let twice_up = p - f64::from(x) * dx - 2.0 * dy;
-        if prepared.get_pixel(twice_up.x.round() as u32, twice_up.y.round() as u32)[0] == 255 {
-            return false;
+        if prepared.get_pixel_checked(twice_up.x.round() as u32, twice_up.y.round() as u32)?[0] == 255 {
+            return Some(false);
         }
 
         let twice_down = p - f64::from(x) * dx + 2.0 * dy;
-        if prepared.get_pixel(twice_down.x.round() as u32, twice_down.y.round() as u32)[0] == 255 {
-            return false;
+        if prepared.get_pixel_checked(twice_down.x.round() as u32, twice_down.y.round() as u32)?[0] == 255 {
+            return Some(false);
         }
     }
 
     for y in -1..1 {
         let twice_left = p - 2.0 * dx - f64::from(y) * dy;
-        if prepared.get_pixel(twice_left.x.round() as u32, twice_left.y.round() as u32)[0] == 255 {
-            return false;
+        if prepared.get_pixel_checked(twice_left.x.round() as u32, twice_left.y.round() as u32)?[0] == 255 {
+            return Some(false);
         }
 
         let twice_right = p + 2.0 * dx - f64::from(y) * dy;
-        if prepared.get_pixel(twice_right.x.round() as u32, twice_right.y.round() as u32)[0] == 255
+        if prepared.get_pixel_checked(twice_right.x.round() as u32, twice_right.y.round() as u32)?[0] == 255
         {
-            return false;
+            return Some(false);
         }
 
         let left = p - dx - f64::from(y) * dy;
-        if prepared.get_pixel(left.x.round() as u32, left.y.round() as u32)[0] == 0 {
-            return false;
+        if prepared.get_pixel_checked(left.x.round() as u32, left.y.round() as u32)?[0] == 0 {
+            return Some(false);
         }
 
         let right = p - dx - f64::from(y) * dy;
-        if prepared.get_pixel(right.x.round() as u32, right.y.round() as u32)[0] == 0 {
-            return false;
+        if prepared.get_pixel_checked(right.x.round() as u32, right.y.round() as u32)?[0] == 0 {
+            return Some(false);
         }
     }
 
     let up = p - dy;
-    if prepared.get_pixel(up.x.round() as u32, up.y.round() as u32)[0] == 0 {
-        return false;
+    if prepared.get_pixel_checked(up.x.round() as u32, up.y.round() as u32)?[0] == 0 {
+        return Some(false);
     }
 
     let down = p + dy;
-    if prepared.get_pixel(down.x.round() as u32, down.y.round() as u32)[0] == 0 {
-        return false;
+    if prepared.get_pixel_checked(down.x.round() as u32, down.y.round() as u32)?[0] == 0 {
+        return Some(false);
     }
 
-    prepared.get_pixel(p.x.round() as u32, p.y.round() as u32)[0] == 0
+    Some(prepared.get_pixel_checked(p.x.round() as u32, p.y.round() as u32)?[0] == 0)
 }
 
 #[derive(Debug)]
